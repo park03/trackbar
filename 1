@@ -1,0 +1,46 @@
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui.hpp>
+#include <iostream>
+
+using namespace cv;
+using namespace std;
+
+static void on_trackbar(int, void*) {
+}
+
+int main()
+{
+    Mat img_color, img_hsv; //선언
+    Mat img_mask;// , img_result;
+    Vec3b lower_h, upper_h;
+    img_color = imread("tomato.jpg", IMREAD_COLOR);
+    pyrDown (img_color, img_color, Size (img_color.cols / 2, img_color.rows / 2));
+    cvtColor(img_color, img_hsv, COLOR_BGR2HSV ); //bgr에서 hsv로 변경
+
+    namedWindow("hsv");
+    createTrackbar("low", "hsv", 0, 180, on_trackbar); //
+    createTrackbar("high", "hsv", 0, 180, on_trackbar);
+    setTrackbarPos ("low", "hsv", 50); 
+    setTrackbarPos("high", "hsv", 150);
+
+    int low, high;
+    while (1) {
+        lower_h = Vec3b( getTrackbarPos  ("low", "hsv"), 0, 0);
+        upper_h = Vec3b(getTrackbarPos("high", "hsv"), 255, 255);
+        inRange(img_hsv, lower_h, upper_h, img_mask);
+        Mat img_result;
+        bitwise_and(img_color, img_color, img_result, img_mask);
+        imshow("hsv", img_result);
+
+        if (waitKey(1) == 27)
+            break;
+    }
+
+    
+    destroyAllWindows();
+    return 0;
+}
+
+
+
+
