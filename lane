@@ -1,0 +1,115 @@
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <opencv2/core/mat.hpp>  
+#include <opencv2/imgcodecs.hpp>  
+#include <opencv2/imgproc.hpp>  
+#include <opencv2/highgui.hpp>  
+
+
+using namespace cv;
+using namespace std;
+
+int main(int argc, char** argv)
+{
+    Mat frame, frame2, frame_gray, sb_frame, img_last, img_edge;
+    int i = 0;
+    VideoCapture cap("video.mp4");
+    if (!cap.isOpened())
+    {
+        cout << "카메라를 열 수 없습니다." << endl;
+        return -1;
+    }
+
+    while (1)
+    {
+        bool ret = cap.read(frame);
+        if (!ret)
+        {
+            cout << "캡쳐 실패" << endl;
+            break;
+        }
+
+        i++;
+        if (i == 3)
+        {
+            i = 0;
+
+            pyrDown(frame, frame);
+            cvtColor(frame, frame_gray, COLOR_BGR2GRAY);
+            Canny(frame_gray, sb_frame, 20, 255);
+            cvtColor(sb_frame, sb_frame, COLOR_GRAY2BGR); //Gray로 바꾸는거
+            frame2 = frame + sb_frame;
+            //Sobel(img_frame, img_frame, img_frame.depth(), 1, 0); //Sobel로 바꾸는거
+
+
+
+
+
+
+
+
+            Mat img_roi = frame(Rect(130, 230, 390, 120)).clone();
+            Mat img_gray = frame(Rect(130, 230, 390, 120)).clone();
+            Mat img_last2 = frame.clone();
+            cvtColor(img_gray, img_gray, COLOR_BGR2GRAY);
+            cvtColor(img_gray, img_gray, COLOR_GRAY2BGR);
+
+            Mat img_hsv_g;
+            Vec3b lower_red1, upper_red1;
+            lower_red1 = Vec3b(0, 0, 140);
+            upper_red1 = Vec3b(40, 40, 255);
+
+            cvtColor(img_gray, img_hsv_g, COLOR_BGR2HSV);
+            Mat img_mask1;
+            inRange(img_hsv_g, lower_red1, upper_red1, img_mask1);
+
+            Mat img_result1;
+            bitwise_and(img_gray, img_gray, img_result1, img_mask1);
+
+
+            Mat img_hsv;
+            Vec3b lower_red2, upper_red2;
+            lower_red2 = Vec3b(0, 0, 140);
+            upper_red2 = Vec3b(40, 40, 255);
+
+            cvtColor(img_roi, img_hsv, COLOR_BGR2HSV);
+            Mat img_mask2;
+            inRange(img_hsv, lower_red2, upper_red2, img_mask2);
+
+            Mat img_result2;
+            bitwise_and(img_roi, img_roi, img_result2, img_mask2);
+
+            img_last = img_result1 + img_result2;
+
+
+            Canny(img_last, img_edge, 50, 150);
+
+            //직선 성분을 검출합니다.  
+
+            vector<Vec4i> linesP;
+            HoughLinesP(img_edge, linesP, 1, CV_PI / 180, 40, 25, 4);
+
+            //검출한 직선을 영상에 그려줍니다.  
+            for (size_t i = 0; i < linesP.size(); i++)
+            {
+                Vec4i l = linesP[i];
+                line(img_last, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 2, LINE_AA);
+            }
+
+            img_last.copyTo(img_last2(Rect(130, 230, 390, 120)));
+
+
+            //imshow("d", frame);
+            //imshow("d1", frame2);
+            imshow("f", img_last2);
+            //imshow("w", sb_frame);
+
+            int key = waitKey(1);
+            if (key == 27)
+                break;
+        }
+    }
+
+    cap.release();
+    return 0;
+}
